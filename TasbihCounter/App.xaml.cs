@@ -1,3 +1,4 @@
+using System.Windows.Threading;
 using System.Windows;
 using System.Windows.Media;
 using WinForms = System.Windows.Forms;
@@ -14,7 +15,10 @@ namespace TasbihCounter;
 /// </summary>
 public partial class App : Application
 {
+    private const uint VK_Q = 0x51;
+
     private ModifierTapHook? _tapHook;
+    private GlobalHotkey? _quitHotkey;
     private WinForms.NotifyIcon? _tray;
     private HudWindow? _hud;
     private SettingsWindow? _settings;
@@ -34,6 +38,12 @@ public partial class App : Application
         {
             _tapHook = new ModifierTapHook();
             _tapHook.Tapped += OnDhikrTapped;
+
+            // Always-available escape hatch. Windows 11 hides new tray icons in
+            // the overflow flyout, so quitting must not depend on finding one.
+            _quitHotkey = new GlobalHotkey(1,
+                GlobalHotkey.Modifiers.Control | GlobalHotkey.Modifiers.Alt, VK_Q);
+            _quitHotkey.Pressed += () => Shutdown();
         }
         catch (Exception ex)
         {
@@ -44,6 +54,22 @@ public partial class App : Application
         }
 
         SetupTray();
+
+        // --demo pins the HUD on screen so its appearance can be inspected or
+        // screenshotted without racing the fade-out timer.
+        if (e.Args.Contains("--demo"))
+        {
+            // Pinned long enough to inspect, but self-terminating: the HUD is
+            // click-through, so it must never outlive an obvious way to close it.
+            _hud.HoldTime = TimeSpan.FromSeconds(30);
+            _hud.Flash("سُبْحَانَ اللّٰه", 33, Color.FromRgb(0x66, 0xE0, 0xA3));
+
+            var demoExit = new DispatcherTimer { Interval = TimeSpan.FromSeconds(32) };
+            demoExit.Tick += (_, _) => { demoExit.Stop(); Shutdown(); };
+            demoExit.Start();
+            return;
+        }
+
         _hud.Flash("Tasbih Counter is running", 0, Color.FromRgb(0x9A, 0xA0, 0xA6));
     }
 
@@ -120,6 +146,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _tapHook?.Dispose();
+        _quitHotkey?.Dispose();
         if (_tray is not null)
         {
             _tray.Visible = false;

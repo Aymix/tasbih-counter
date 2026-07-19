@@ -12,34 +12,78 @@
         Opacity="0"
         IsHitTestVisible="False">
 
-    <!-- Rounded card. Colors are updated per-dhikr from code-behind. -->
+    <!-- Frosted glass without any DWM API: Backdrop holds a snapshot of the
+         screen behind the HUD, blurred here in WPF. A tint sits on top for
+         contrast, then the text. CardRoot is clipped to a rounded rect in
+         code-behind (Border doesn't clip children to its CornerRadius). -->
     <Border x:Name="Card"
             CornerRadius="16"
-            Padding="28,20"
             MinWidth="160"
-            Background="#E6161616">
+            BorderThickness="1">
+        <Border.BorderBrush>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Offset="0" Color="#59FFFFFF"/>
+                <GradientStop Offset="1" Color="#1AFFFFFF"/>
+            </LinearGradientBrush>
+        </Border.BorderBrush>
         <Border.Effect>
-            <DropShadowEffect BlurRadius="24" ShadowDepth="0" Opacity="0.5" Color="#000000"/>
+            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.55" Color="#000000"/>
         </Border.Effect>
 
-        <StackPanel HorizontalAlignment="Center">
-            <!-- Dhikr label (Arabic renders right-to-left). -->
-            <TextBlock x:Name="LabelText"
-                       Text="سُبْحَانَ اللّٰه"
-                       FlowDirection="RightToLeft"
-                       FontFamily="Segoe UI, Traditional Arabic, Amiri"
-                       FontSize="22"
-                       Foreground="#66E0A3"
-                       HorizontalAlignment="Center"/>
-            <!-- Big count. -->
-            <TextBlock x:Name="CountText"
-                       Text="0"
-                       FontFamily="Segoe UI Semibold"
-                       FontSize="72"
-                       FontWeight="Bold"
-                       Foreground="White"
-                       Margin="0,-4,0,0"
-                       HorizontalAlignment="Center"/>
-        </StackPanel>
+        <Grid x:Name="CardRoot">
+            <!-- Snapshot of what's behind the HUD.
+                 This MUST be a Rectangle+ImageBrush, not an Image: an Image
+                 reports its bitmap's natural size as its desired size, which
+                 with SizeToContent makes the window grow to fit the snapshot —
+                 and the snapshot is taken at window size + bleed, so the window
+                 runs away to fullscreen. A Rectangle contributes no size.
+                 The negative margin pushes the blur's soft edges outside the clip. -->
+            <Rectangle x:Name="Backdrop" Margin="-32">
+                <Rectangle.Fill>
+                    <ImageBrush x:Name="BackdropBrush" Stretch="Fill"/>
+                </Rectangle.Fill>
+                <Rectangle.Effect>
+                    <BlurEffect Radius="28" KernelType="Gaussian" RenderingBias="Quality"/>
+                </Rectangle.Effect>
+            </Rectangle>
+
+            <!-- Tint over the blur: keeps text readable and gives it depth. -->
+            <Rectangle>
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Offset="0" Color="#8C222624"/>
+                        <GradientStop Offset="1" Color="#A6121413"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+
+            <StackPanel HorizontalAlignment="Center" Margin="28,20">
+                <!-- Dhikr label (Arabic renders right-to-left). -->
+                <TextBlock x:Name="LabelText"
+                           Text="سُبْحَانَ اللّٰه"
+                           FlowDirection="RightToLeft"
+                           FontFamily="Segoe UI, Traditional Arabic, Amiri"
+                           FontSize="22"
+                           Foreground="#66E0A3"
+                           HorizontalAlignment="Center">
+                    <TextBlock.Effect>
+                        <DropShadowEffect BlurRadius="6" ShadowDepth="0" Opacity="0.85" Color="#000000"/>
+                    </TextBlock.Effect>
+                </TextBlock>
+                <!-- Big count. -->
+                <TextBlock x:Name="CountText"
+                           Text="0"
+                           FontFamily="Segoe UI Semibold"
+                           FontSize="72"
+                           FontWeight="Bold"
+                           Foreground="White"
+                           Margin="0,-4,0,0"
+                           HorizontalAlignment="Center">
+                    <TextBlock.Effect>
+                        <DropShadowEffect BlurRadius="8" ShadowDepth="0" Opacity="0.8" Color="#000000"/>
+                    </TextBlock.Effect>
+                </TextBlock>
+            </StackPanel>
+        </Grid>
     </Border>
 </Window>

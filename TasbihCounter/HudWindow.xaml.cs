@@ -20,7 +20,14 @@ public enum HudSize { Small, Medium, Large }
 
 /// <summary>
 /// A borderless, topmost, click-through HUD that flashes the current dhikr count
-/// and fades away. Reused for every press (one window, re-shown).
+/// on a frosted-glass card, then fades away.
+///
+/// The frost is done by hand: Windows 11 dropped supported per-window blur (the
+/// accent-policy API silently stopped blurring, and the DWM system backdrop
+/// rendered opaque here), so the HUD snapshots the screen behind itself, blurs
+/// that image in WPF, and paints it as its background. Because the HUD is
+/// stationary and only on screen for about a second, a still frame is
+/// indistinguishable from a live backdrop.
 /// </summary>
 public partial class HudWindow : Window
 {
@@ -37,7 +44,14 @@ public partial class HudWindow : Window
     [DllImport("user32.dll")]
     private static extern int SetWindowLong(IntPtr hwnd, int index, int newStyle);
 
-    private const int EdgeGap = 24; // gap from the screen edge, in DIPs
+    private const int EdgeGap = 24;          // gap from the screen edge, in DIPs
+    private const double CornerRadius = 16;  // must match the Card in XAML
+
+    /// <summary>
+    /// Extra screen captured around the HUD, in DIPs. A blur samples beyond its
+    /// source edges, so without this bleed the card would have dark rims.
+    /// </summary>
+    private const double Bleed = 32;
 
     private readonly DispatcherTimer _dismissTimer;
 
@@ -50,7 +64,6 @@ public partial class HudWindow : Window
     public HudWindow()
     {
         InitializeComponent();
-
         _dismissTimer = new DispatcherTimer { Interval = HoldTime };
         _dismissTimer.Tick += (_, _) =>
         {
@@ -80,16 +93,50 @@ public partial class HudWindow : Window
         CountText.Text = count.ToString();
         ApplyScale();
 
+        // Only re-snapshot when coming back from invisible. Re-capturing while
+        // already on screen would photograph our own card and feed it back.
+        bool needsBackdrop = !IsVisible || Opacity < 0.05;
+
         if (!IsVisible)
-            Show();
+            Show(); // still at Opacity 0 — nothing is drawn yet
 
-        // Recompute position after content/scale changes size.
-        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(Reposition));
+        // Everything below needs a measured size, which only exists after layout.
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+        {
+            Reposition();
+            UpdateClip();
+            if (needsBackdrop) CaptureBackdrop();
 
-        FadeIn();
-        _dismissTimer.Stop();
-        _dismissTimer.Interval = HoldTime;
-        _dismissTimer.Start();
+            FadeIn();
+            _dismissTimer.Stop();
+            _dismissTimer.Interval = HoldTime;
+            _dismissTimer.Start();
+        }));
+    }
+
+    /// <summary>Snapshot the screen behind the HUD and use it as the frosted backdrop.</summary>
+    private void CaptureBackdrop()
+    {
+        var dpi = VisualTreeHelper.GetDpi(this);
+
+        int x = (int)Math.Round((Left - Bleed) * dpi.DpiScaleX);
+        int y = (int)Math.Round((Top - Bleed) * dpi.DpiScaleY);
+        int w = (int)Math.Round((ActualWidth + Bleed * 2) * dpi.DpiScaleX);
+        int h = (int)Math.Round((ActualHeight + Bleed * 2) * dpi.DpiScaleY);
+
+        // The Rectangle's negative margin (set in XAML to -Bleed) already pulls
+        // the oversized snapshot past the clip so its blurred edges stay hidden.
+        BackdropBrush.ImageSource = ScreenCapture.Capture(x, y, w, h);
+    }
+
+    /// <summary>A Border won't clip children to its CornerRadius; do it manually.</summary>
+    private void UpdateClip()
+    {
+        if (CardRoot.ActualWidth <= 0 || CardRoot.ActualHeight <= 0) return;
+
+        CardRoot.Clip = new RectangleGeometry(
+            new Rect(0, 0, CardRoot.ActualWidth, CardRoot.ActualHeight),
+            CornerRadius - 1, CornerRadius - 1); // -1 keeps it inside the 1px border
     }
 
     private void ApplyScale()
@@ -136,13 +183,11 @@ public partial class HudWindow : Window
     private void FadeIn()
     {
         BeginAnimation(OpacityProperty, null);
-        var anim = new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(90));
-        BeginAnimation(OpacityProperty, anim);
+        BeginAnimation(OpacityProperty, new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(90)));
     }
 
     private void FadeOut()
     {
-        var anim = new DoubleAnimation(0.0, TimeSpan.FromMilliseconds(320));
-        BeginAnimation(OpacityProperty, anim);
+        BeginAnimation(OpacityProperty, new DoubleAnimation(0.0, TimeSpan.FromMilliseconds(320)));
     }
 }
