@@ -57,6 +57,19 @@
                 </Rectangle.Fill>
             </Rectangle>
 
+            <!-- Naqsh: seamless geometric tile drawn by make_naqsh.py, laid over
+                 the frost. A Rectangle (no intrinsic size) so it can't affect the
+                 window's SizeToContent measurement. -->
+            <Rectangle x:Name="Naqsh" Opacity="0.20">
+                <Rectangle.Fill>
+                    <ImageBrush ImageSource="naqsh.png"
+                                TileMode="Tile"
+                                Viewport="0,0,100,100"
+                                ViewportUnits="Absolute"
+                                Stretch="Fill"/>
+                </Rectangle.Fill>
+            </Rectangle>
+
             <StackPanel HorizontalAlignment="Center" Margin="28,20">
                 <!-- Dhikr label (Arabic renders right-to-left). -->
                 <TextBlock x:Name="LabelText"
