@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <AssemblyName>TasbihCounter</AssemblyName>
+    <RootNamespace>TasbihCounter</RootNamespace>
+    <!-- WFAC010: the WinForms analyzer wants DPI configured via its own API, but
+         this is a WPF app (WinForms is only used for the tray icon), so the
+         manifest is the right place for it. -->
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Embedded so the tray icon loads even from the single-file exe. -->
+    <EmbeddedResource Include="icon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- WinForms is referenced only for the tray icon and color picker. Keep its
+         namespaces out of the implicit usings so Color/Button/Application resolve
+         to their WPF versions; the few WinForms types used are fully qualified. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+</Project>
