@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Windows.Threading;
 using System.Windows;
 using System.Windows.Media;
@@ -36,29 +37,41 @@ public partial class App : Application
     private AppConfig _config = AppConfig.Defaults();
     private readonly Dictionary<TapKey, int> _counts = new();
 
+    /// <summary>
+    /// Held for the process lifetime to enforce a single instance. Without it a
+    /// second copy can't claim the global hotkeys and dies with a confusing
+    /// "hotkey already registered" error (Win32 1409).
+    /// </summary>
+    private Mutex? _instanceMutex;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        _instanceMutex = new Mutex(true, @"Local\TasbihCounter.SingleInstance", out bool isFirst);
+        if (!isFirst)
+        {
+            MessageBox.Show(
+                "Tasbih Counter is already running.\n\n" +
+                "Look for it in the system tray — Windows 11 hides new tray icons " +
+                "behind the ^ arrow near the clock.",
+                "Tasbih Counter",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+
+            _instanceMutex = null; // belongs to the first instance; don't release it
+            Shutdown();
+            return;
+        }
 
         _config = ConfigStore.Load();
         _hud = new HudWindow();
         ApplyConfigToHud();
 
+        // The keyboard hook IS the app: if it fails there's nothing to run.
         try
         {
             _tapHook = new ModifierTapHook();
             _tapHook.Tapped += OnDhikrTapped;
-
-            // Always-available escape hatch. Windows 11 hides new tray icons in
-            // the overflow flyout, so quitting must not depend on finding one.
-            _quitHotkey = new GlobalHotkey(1,
-                GlobalHotkey.Modifiers.Control | GlobalHotkey.Modifiers.Alt, VK_Q);
-            _quitHotkey.Pressed += () => Shutdown();
-
-            // Pause/resume counting without hunting for the tray icon.
-            _toggleHotkey = new GlobalHotkey(2,
-                GlobalHotkey.Modifiers.Control | GlobalHotkey.Modifiers.Alt, VK_P);
-            _toggleHotkey.Pressed += () => SetCounting(!_countingEnabled);
         }
         catch (Exception ex)
         {
@@ -69,6 +82,23 @@ public partial class App : Application
         }
 
         SetupTray();
+
+        // Hotkeys are a convenience — the tray menu does everything they do — so
+        // one being taken by another app must not stop the counter from running.
+        var unavailable = new List<string>();
+
+        _quitHotkey = TryRegisterHotkey(1, VK_Q, "Ctrl+Alt+Q", unavailable);
+        if (_quitHotkey is not null) _quitHotkey.Pressed += () => Shutdown();
+
+        _toggleHotkey = TryRegisterHotkey(2, VK_P, "Ctrl+Alt+P", unavailable);
+        if (_toggleHotkey is not null)
+            _toggleHotkey.Pressed += () => SetCounting(!_countingEnabled);
+
+        if (unavailable.Count > 0)
+            _tray?.ShowBalloonTip(6000, "Tasbih Counter",
+                $"{string.Join(" and ", unavailable)} is already used by another app. " +
+                "Use the tray menu instead — counting works normally.",
+                WinForms.ToolTipIcon.Info);
 
         // --demo pins the HUD on screen so its appearance can be inspected or
         // screenshotted without racing the fade-out timer.
@@ -86,6 +116,24 @@ public partial class App : Application
         }
 
         _hud.Flash("Tasbih Counter is running", 0, Color.FromRgb(0x9A, 0xA0, 0xA6));
+    }
+
+    /// <summary>
+    /// Register a global hotkey, recording its name in <paramref name="unavailable"/>
+    /// and returning null if the combination is already taken.
+    /// </summary>
+    private static GlobalHotkey? TryRegisterHotkey(int id, uint vk, string name, List<string> unavailable)
+    {
+        try
+        {
+            return new GlobalHotkey(id,
+                GlobalHotkey.Modifiers.Control | GlobalHotkey.Modifiers.Alt, vk);
+        }
+        catch (InvalidOperationException)
+        {
+            unavailable.Add(name);
+            return null;
+        }
     }
 
     private static System.Drawing.Icon LoadAppIcon()
@@ -196,6 +244,15 @@ public partial class App : Application
             _tray.Visible = false;
             _tray.Dispose();
         }
+
+        // Only the owning instance releases it, so a duplicate launch can't free
+        // the lock out from under the real one.
+        if (_instanceMutex is not null)
+        {
+            _instanceMutex.ReleaseMutex();
+            _instanceMutex.Dispose();
+        }
+
         base.OnExit(e);
     }
 }
