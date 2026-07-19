@@ -16,12 +16,22 @@ namespace TasbihCounter;
 public partial class App : Application
 {
     private const uint VK_Q = 0x51;
+    private const uint VK_P = 0x50;
 
     private ModifierTapHook? _tapHook;
     private GlobalHotkey? _quitHotkey;
+    private GlobalHotkey? _toggleHotkey;
     private WinForms.NotifyIcon? _tray;
+    private WinForms.ToolStripMenuItem? _toggleItem;
     private HudWindow? _hud;
     private SettingsWindow? _settings;
+
+    /// <summary>
+    /// Master switch for the tap shortcuts. Deliberately not persisted: the app
+    /// always starts counting, so a pause set long ago can't leave someone
+    /// wondering why taps do nothing.
+    /// </summary>
+    private bool _countingEnabled = true;
 
     private AppConfig _config = AppConfig.Defaults();
     private readonly Dictionary<TapKey, int> _counts = new();
@@ -44,6 +54,11 @@ public partial class App : Application
             _quitHotkey = new GlobalHotkey(1,
                 GlobalHotkey.Modifiers.Control | GlobalHotkey.Modifiers.Alt, VK_Q);
             _quitHotkey.Pressed += () => Shutdown();
+
+            // Pause/resume counting without hunting for the tray icon.
+            _toggleHotkey = new GlobalHotkey(2,
+                GlobalHotkey.Modifiers.Control | GlobalHotkey.Modifiers.Alt, VK_P);
+            _toggleHotkey.Pressed += () => SetCounting(!_countingEnabled);
         }
         catch (Exception ex)
         {
@@ -82,6 +97,17 @@ public partial class App : Application
     private void SetupTray()
     {
         var menu = new WinForms.ContextMenuStrip();
+
+        // CheckOnClick flips Checked before Click fires, so it already holds the
+        // new state by the time we read it.
+        _toggleItem = new WinForms.ToolStripMenuItem("Counting enabled")
+        {
+            Checked = _countingEnabled,
+            CheckOnClick = true,
+        };
+        _toggleItem.Click += (_, _) => SetCounting(_toggleItem.Checked);
+        menu.Items.Add(_toggleItem);
+
         menu.Items.Add("Open Settings", null, (_, _) => ShowSettings());
         menu.Items.Add("Reset counts", null, (_, _) => ResetCounts());
         menu.Items.Add(new WinForms.ToolStripSeparator());
@@ -105,8 +131,25 @@ public partial class App : Application
         _hud.HoldTime = TimeSpan.FromMilliseconds(_config.HoldMs);
     }
 
+    /// <summary>Turn the tap shortcuts on or off and reflect it everywhere.</summary>
+    private void SetCounting(bool enabled)
+    {
+        _countingEnabled = enabled;
+
+        if (_toggleItem is not null) _toggleItem.Checked = enabled;
+        if (_tray is not null)
+            _tray.Text = enabled ? "Tasbih Counter" : "Tasbih Counter — paused";
+
+        _hud?.Flash(
+            enabled ? "Counting enabled" : "Counting paused",
+            0,
+            enabled ? Color.FromRgb(0x66, 0xE0, 0xA3) : Color.FromRgb(0x9A, 0xA0, 0xA6));
+    }
+
     private void OnDhikrTapped(TapKey key)
     {
+        if (!_countingEnabled) return;
+
         var dhikr = _config.Adhkar.FirstOrDefault(d => d.Key == key && d.Enabled);
         if (dhikr is null) return;
 
@@ -147,6 +190,7 @@ public partial class App : Application
     {
         _tapHook?.Dispose();
         _quitHotkey?.Dispose();
+        _toggleHotkey?.Dispose();
         if (_tray is not null)
         {
             _tray.Visible = false;

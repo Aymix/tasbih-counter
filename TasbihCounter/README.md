@@ -17,6 +17,7 @@ One bare modifier **tap** per dhikr (press and release alone — combos like
 |--------------|-----------------------------------------------------|
 | Tap `Alt`    | Count سُبْحَانَ اللّٰه (SubhanAllah)                   |
 | Tap `Ctrl`   | Count اللّٰهُ أَكْبَر (Allahu akbar)                    |
+| `Ctrl+Alt+P` | Pause / resume counting (also in the tray menu)     |
 | `Ctrl+Alt+Q` | Quit the app                                        |
 
 Counts are per-dhikr, in memory only, and reset on relaunch (per the v1 decision).

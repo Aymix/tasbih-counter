@@ -33,6 +33,17 @@ key alone — counts one.
 Using a modifier in a **combo** — `Ctrl+C`, `Alt+Tab`, `Ctrl+Shift+Esc` — never
 counts, so normal typing is untouched.
 
+### Other shortcuts
+
+| Keys | Action |
+|------|--------|
+| `Ctrl+Alt+P` | Pause / resume counting (also in the tray menu) |
+| `Ctrl+Alt+Q` | Quit |
+
+Pausing is handy during heavy typing, when a stray solo tap could miscount. It
+always starts **enabled** on launch — the pause is not persisted, so it can
+never silently swallow your counts after a restart.
+
 ## Features
 
 - **Global** — counts while any app is focused (low-level keyboard hook)
@@ -40,7 +51,8 @@ counts, so normal typing is untouched.
 - **9 screen positions** — any corner, edge-center, or center
 - **3 sizes** — small / medium / large
 - **Per-dhikr label and color**, editable in settings
-- **Tray icon** — open settings, reset counts, quit
+- **Pause / resume** — `Ctrl+Alt+P` or the tray menu, to stop accidental counts
+- **Tray icon** — pause, open settings, reset counts, quit
 - **Settings persist** to `%AppData%\TasbihCounter\config.json`
 
 Counts are in memory only and reset on relaunch — each launch is a fresh session.
