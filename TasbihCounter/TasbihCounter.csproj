@@ -20,6 +20,8 @@
   <ItemGroup>
     <!-- Embedded so the tray icon loads even from the single-file exe. -->
     <EmbeddedResource Include="icon.ico" />
+    <!-- Seamless naqsh tile for the HUD card; regenerate with make_naqsh.py. -->
+    <Resource Include="naqsh.png" />
   </ItemGroup>
 
   <ItemGroup>
