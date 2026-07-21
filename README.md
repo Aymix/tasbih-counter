@@ -9,6 +9,14 @@
 Tap a modifier key anywhere — even while another app is focused — and a small HUD
 flashes your count, then fades away.
 
+<br>
+
+<img src="docs/screenshots/hud.png" width="200" alt="HUD showing Subhan Allah at 33">
+&nbsp;&nbsp;
+<img src="docs/screenshots/hud-alt.png" width="200" alt="HUD showing Allahu akbar at 7">
+
+<sub>The HUD: frosted glass with a naqsh overlay, color-coded per dhikr.</sub>
+
 </div>
 
 ---
@@ -57,6 +65,13 @@ never silently swallow your counts after a restart.
 
 Counts are in memory only and reset on relaunch — each launch is a fresh session.
 
+## Settings
+
+<img src="docs/screenshots/settings.png" width="420" alt="Settings window">
+
+Reachable from the tray icon. Edit each dhikr's text and color, pick one of nine
+HUD positions, choose a size, and set how long the HUD stays on screen.
+
 ## Requirements
 
 - Windows 10/11
@@ -88,6 +103,19 @@ Then run `out/TasbihCounter.exe`. It starts in the tray with no main window.
 | `SettingsWindow.xaml(.cs)` | Settings UI |
 | `Config.cs` | JSON config model, load/save |
 | `make_icon.py` | Regenerates `icon.ico` (Pillow) |
+| `make_naqsh.py` | Regenerates the naqsh tile, PNG + SVG (Pillow) |
+| `ScreenshotMode.cs` | `--shot` renders the UI to PNGs for these docs |
+
+### Regenerating the screenshots
+
+```bash
+TasbihCounter.exe --shot docs/screenshots
+```
+
+The app renders its own UI rather than being captured externally: the HUD is a
+layered, DWM-composited window that screen capture cannot see — `BitBlt` and
+`CopyFromScreen` omit it, and `PrintWindow` returns a black frame.
+`RenderTargetBitmap` draws the live visual tree instead.
 
 ## Known quirks
 
