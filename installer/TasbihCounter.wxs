@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MSI installer for Tasbih Counter (WiX 7).
+
+  Per-user install (Scope="perUser"): goes to %LocalAppData%\Programs so it needs
+  no admin rights and shows no UAC prompt — the app itself never needs elevation,
+  and this keeps it easy to hand to someone.
+
+  Build:
+    dotnet publish ... -o <PublishDir>          (self-contained, single file)
+    wix build installer\TasbihCounter.wxs -d PublishDir=<PublishDir> -o <out>.msi
+
+  GUIDs below are fixed on purpose: changing UpgradeCode would break upgrades
+  from an already-installed copy.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <Package
+      Name="Tasbih Counter"
+      Manufacturer="Aymix"
+      Version="$(var.ProductVersion)"
+      UpgradeCode="66A5E7E7-12F1-443C-A684-0B91310142F9"
+      Scope="perUser"
+      Compressed="yes">
+
+    <!-- Installing a new version cleanly replaces the old one. -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Passed in as an absolute path: relative paths resolve against the build
+         working directory, which isn't reliable across shells. -->
+    <Icon Id="AppIcon.ico" SourceFile="$(var.IconFile)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/Aymix/tasbih-counter" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/Aymix/tasbih-counter" />
+    <!-- Nothing to configure post-install; hide the Change button. -->
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <Feature Id="Main" Title="Tasbih Counter" Level="1">
+      <ComponentGroupRef Id="AppComponents" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <!-- %LocalAppData%\Programs\Tasbih Counter -->
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Tasbih Counter" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppShortcutFolder" Name="Tasbih Counter" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="AppComponents">
+
+      <!-- The application itself: one self-contained exe, no .NET prerequisite. -->
+      <Component Id="AppExe" Directory="INSTALLFOLDER"
+                 Guid="C9654EC0-46D9-4203-BFFC-67335B75376A">
+        <File Id="TasbihCounterExe"
+              Source="$(var.PublishDir)\TasbihCounter.exe"
+              KeyPath="yes" />
+      </Component>
+
+      <Component Id="ReadmeTxt" Directory="INSTALLFOLDER"
+                 Guid="DF70E107-73EE-40E8-920C-7241E5A911E2">
+        <File Id="ReadmeFile" Source="$(var.PublishDir)\README.txt" KeyPath="yes" />
+      </Component>
+
+      <!-- Per-user components need an HKCU key path, so each shortcut carries one. -->
+      <Component Id="StartMenuShortcut" Directory="AppShortcutFolder"
+                 Guid="1B1BFC70-F7C7-469F-8908-B7015661D2E8">
+        <Shortcut Id="StartMenuLink"
+                  Name="Tasbih Counter"
+                  Description="Keyboard-native dhikr counter"
+                  Target="[INSTALLFOLDER]TasbihCounter.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon.ico" />
+        <RemoveFolder Id="RemoveAppShortcutFolder" Directory="AppShortcutFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\Aymix\TasbihCounter"
+                       Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <Component Id="DesktopShortcut" Directory="DesktopFolder"
+                 Guid="AA061E83-15C2-4541-8463-017D8D46D3E4">
+        <Shortcut Id="DesktopLink"
+                  Name="Tasbih Counter"
+                  Description="Keyboard-native dhikr counter"
+                  Target="[INSTALLFOLDER]TasbihCounter.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon.ico" />
+        <RegistryValue Root="HKCU" Key="Software\Aymix\TasbihCounter"
+                       Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+    </ComponentGroup>
+  </Fragment>
+
+</Wix>
