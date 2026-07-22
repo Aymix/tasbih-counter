@@ -1,3 +1,4 @@
+using System.IO;
 using System.Threading;
 using System.Windows.Threading;
 using System.Windows;
@@ -99,6 +100,21 @@ public partial class App : Application
                 $"{string.Join(" and ", unavailable)} is already used by another app. " +
                 "Use the tray menu instead — counting works normally.",
                 WinForms.ToolTipIcon.Info);
+
+        // --shot [dir] renders the UI to PNGs for the docs, then exits. The HUD
+        // is a layered window that external capture tools can't see, so the app
+        // has to screenshot itself. See ScreenshotMode.
+        if (e.Args.Contains("--shot"))
+        {
+            int i = Array.IndexOf(e.Args, "--shot");
+            string dir = i + 1 < e.Args.Length && !e.Args[i + 1].StartsWith("--")
+                ? e.Args[i + 1]
+                : Path.Combine(Environment.GetFolderPath(
+                    Environment.SpecialFolder.DesktopDirectory), "tasbih-shots");
+
+            ScreenshotMode.Run(_config, dir, Shutdown);
+            return;
+        }
 
         // --demo pins the HUD on screen so its appearance can be inspected or
         // screenshotted without racing the fade-out timer.
