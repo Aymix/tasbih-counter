@@ -47,12 +47,16 @@
                 </Rectangle.Effect>
             </Rectangle>
 
-            <!-- Tint over the blur: keeps text readable and gives it depth. -->
+            <!-- Tint over the blur: keeps text readable and gives it depth.
+                 Kept deliberately light (~38-48%): at the previous 55-65% it
+                 buried the blurred backdrop and the card read as flat dark,
+                 especially over a dark desktop. Text stays legible via its own
+                 drop shadows rather than by making this opaque. -->
             <Rectangle>
                 <Rectangle.Fill>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                        <GradientStop Offset="0" Color="#8C222624"/>
-                        <GradientStop Offset="1" Color="#A6121413"/>
+                        <GradientStop Offset="0" Color="#61222624"/>
+                        <GradientStop Offset="1" Color="#7A121413"/>
                     </LinearGradientBrush>
                 </Rectangle.Fill>
             </Rectangle>
@@ -60,7 +64,9 @@
             <!-- Naqsh: seamless geometric tile drawn by make_naqsh.py, laid over
                  the frost. A Rectangle (no intrinsic size) so it can't affect the
                  window's SizeToContent measurement. -->
-            <Rectangle x:Name="Naqsh" Opacity="0.20">
+            <!-- Eased back from 0.20: the pattern was competing with the frost
+                 rather than accenting it. -->
+            <Rectangle x:Name="Naqsh" Opacity="0.13">
                 <Rectangle.Fill>
                     <ImageBrush ImageSource="naqsh.png"
                                 TileMode="Tile"
