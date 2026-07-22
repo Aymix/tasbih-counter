@@ -36,6 +36,27 @@
             <Setter Property="Padding" Value="6,4"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
+
+        <!-- Keycap look for the shortcut list. -->
+        <Style x:Key="KeyChip" TargetType="Border">
+            <Setter Property="Background" Value="#2A2B2D"/>
+            <Setter Property="BorderBrush" Value="#3C4043"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="7,2"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+        <Style x:Key="KeyText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#E8EAED"/>
+            <Setter Property="FontFamily" Value="Consolas, Segoe UI"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style x:Key="KeyDesc" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#B6BABE"/>
+            <Setter Property="Margin" Value="12,0,0,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
     </Window.Resources>
 
     <StackPanel Margin="22,18,22,18">
@@ -67,6 +88,50 @@
                     TickFrequency="100" IsSnapToTickEnabled="True" VerticalAlignment="Center"/>
             <TextBlock x:Name="HoldLabel" Grid.Column="1" MinWidth="70"
                        TextAlignment="Right" Text="900 ms"/>
+        </Grid>
+
+        <TextBlock Text="SHORTCUTS" Style="{StaticResource Section}"/>
+        <Grid x:Name="ShortcutsGrid">
+            <!-- Auto, not a fixed width: at 120 the widest chip clipped to
+                 "Alt / Ctrl / Shi". Auto sizes to the longest chip and keeps the
+                 descriptions aligned. -->
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- The per-dhikr tap keys are shown against each row under ADHKAR;
+                 this repeats them as a whole so the shortcut list is complete. -->
+            <Border Grid.Row="0" Style="{StaticResource KeyChip}" Margin="0,0,0,6">
+                <TextBlock Text="Alt / Ctrl / Shift" Style="{StaticResource KeyText}"/>
+            </Border>
+            <TextBlock Grid.Row="0" Grid.Column="1" Margin="12,0,0,6"
+                       Foreground="#B6BABE" VerticalAlignment="Center"
+                       Text="Tap alone to count that dhikr"/>
+
+            <Border Grid.Row="1" Style="{StaticResource KeyChip}" Margin="0,0,0,6">
+                <TextBlock Text="Ctrl + Alt + P" Style="{StaticResource KeyText}"/>
+            </Border>
+            <TextBlock x:Name="PauseDesc" Grid.Row="1" Grid.Column="1" Margin="12,0,0,6"
+                       Foreground="#B6BABE" VerticalAlignment="Center"
+                       Text="Pause / resume counting"/>
+
+            <Border Grid.Row="2" Style="{StaticResource KeyChip}" Margin="0,0,0,6">
+                <TextBlock Text="Ctrl + Alt + Q" Style="{StaticResource KeyText}"/>
+            </Border>
+            <TextBlock x:Name="QuitDesc" Grid.Row="2" Grid.Column="1" Margin="12,0,0,6"
+                       Foreground="#B6BABE" VerticalAlignment="Center"
+                       Text="Quit"/>
+
+            <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Margin="0,4,0,0"
+                       Foreground="#8A9096" FontSize="11" TextWrapping="Wrap"
+                       Text="Combos like Ctrl+C or Alt+Tab never count — only a key pressed and released on its own."/>
         </Grid>
 
         <Grid Margin="0,24,0,0">

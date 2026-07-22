@@ -32,7 +32,12 @@ public partial class SettingsWindow : Window
     /// <summary>Raised when the user saves; carries the edited config.</summary>
     public event Action<AppConfig>? Saved;
 
-    public SettingsWindow(AppConfig current, Action resetCounts)
+    /// <param name="unavailableHotkeys">
+    /// Combinations another app already owns, so the shortcut list can say they
+    /// won't work rather than advertising a key that does nothing.
+    /// </param>
+    public SettingsWindow(AppConfig current, Action resetCounts,
+                          IReadOnlyCollection<string>? unavailableHotkeys = null)
     {
         InitializeComponent();
         _working = Clone(current);
@@ -41,6 +46,7 @@ public partial class SettingsWindow : Window
 
         BuildAdhkarRows();
         BuildPositionGrid();
+        MarkUnavailableHotkeys(unavailableHotkeys);
 
         SizeSmall.IsChecked = _working.Size == HudSize.Small;
         SizeMedium.IsChecked = _working.Size == HudSize.Medium;
@@ -64,6 +70,25 @@ public partial class SettingsWindow : Window
             ColorHex = d.ColorHex,
         }).ToList(),
     };
+
+    /// <summary>Note any hotkey another app has claimed, so the list stays honest.</summary>
+    private void MarkUnavailableHotkeys(IReadOnlyCollection<string>? unavailable)
+    {
+        if (unavailable is null || unavailable.Count == 0) return;
+
+        var dimmed = new SolidColorBrush(Color.FromRgb(0x8A, 0x90, 0x96));
+
+        if (unavailable.Contains("Ctrl+Alt+P"))
+        {
+            PauseDesc.Text = "Pause / resume — in use by another app; use the tray menu";
+            PauseDesc.Foreground = dimmed;
+        }
+        if (unavailable.Contains("Ctrl+Alt+Q"))
+        {
+            QuitDesc.Text = "Quit — in use by another app; use the tray menu";
+            QuitDesc.Foreground = dimmed;
+        }
+    }
 
     private void BuildAdhkarRows()
     {
