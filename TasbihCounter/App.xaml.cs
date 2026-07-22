@@ -38,6 +38,9 @@ public partial class App : Application
     private AppConfig _config = AppConfig.Defaults();
     private readonly Dictionary<TapKey, int> _counts = new();
 
+    /// <summary>Hotkeys another app already owns; surfaced in the settings list.</summary>
+    private readonly List<string> _unavailableHotkeys = new();
+
     /// <summary>
     /// Held for the process lifetime to enforce a single instance. Without it a
     /// second copy can't claim the global hotkeys and dies with a confusing
@@ -86,7 +89,7 @@ public partial class App : Application
 
         // Hotkeys are a convenience — the tray menu does everything they do — so
         // one being taken by another app must not stop the counter from running.
-        var unavailable = new List<string>();
+        var unavailable = _unavailableHotkeys;
 
         _quitHotkey = TryRegisterHotkey(1, VK_Q, "Ctrl+Alt+Q", unavailable);
         if (_quitHotkey is not null) _quitHotkey.Pressed += () => Shutdown();
@@ -232,7 +235,7 @@ public partial class App : Application
             return;
         }
 
-        _settings = new SettingsWindow(_config, ResetCounts);
+        _settings = new SettingsWindow(_config, ResetCounts, _unavailableHotkeys);
         _settings.Saved += cfg =>
         {
             _config = cfg;
